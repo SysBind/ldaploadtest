@@ -7,7 +7,7 @@ services:
         - LDAP_ORGANISATION=sysbind
         - LDAP_DOMAIN=sysbind.test
         - "LDAP_BASE_DN=dc=sysbind,dc=test"
-        - LDAP_ADMIN_PASSWORD=sysbinddevops
+        - LDAP_ADMIN_PASSWORD=p4ssw0rd
     ports:
         - 389:389
         - 636:636
