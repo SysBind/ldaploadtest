@@ -1,4 +1,4 @@
-# LDAPLoadTest
+# LDAP Load Testing Tool
 
 ## Development
 

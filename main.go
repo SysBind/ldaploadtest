@@ -23,17 +23,25 @@ func main() {
 	defer l.Close()
 
 	bindStr := fmt.Sprintf("cn=%s", *cn)
+
+	// split dn components
+	var dcsstr string
 	dcs := strings.Split(*dn, ".")
 	for i := range dcs {
-		bindStr = fmt.Sprintf("%s, dc=%s", bindStr, dcs[i])
+		dcsstr = fmt.Sprintf("%s dc=%s", dcsstr, dcs[i])
+		fmt.Printf("length=%d, i=%d", len(dcs), i)
+		if i < len(dcs)-1 {
+			dcsstr = fmt.Sprintf("%s,", dcsstr)
+		}
 	}
-	fmt.Printf("attempting to connect using %s\n", bindStr)
+	bindStr = fmt.Sprintf("%s, %s", bindStr, dcsstr)
+	fmt.Printf("connecting using \"%s\"\n", bindStr)
 
 	err = l.Bind(bindStr, *pass)
 	if err != nil {
 		log.Fatal(err)
 	}
-	user := "fooUser"
+	user := "demo1"
 	baseDN := "DC=sysbind,DC=test"
 	filter := fmt.Sprintf("(CN=%s)", ldap.EscapeFilter(user))
 
