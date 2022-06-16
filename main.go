@@ -19,8 +19,10 @@ func main() {
 	}
 	defer svc.Close()
 
-	err = svc.Query("demo1")
+	loader := Loader{svc: &svc}
+
+	err = loader.Run()
 	if err != nil {
-		fmt.Errorf("failed to query LDAP: %w", err)
+		fmt.Errorf("failed to run: %w", err)
 	}
 }
