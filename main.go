@@ -33,4 +33,16 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	user := "fooUser"
+	baseDN := "DC=sysbind,DC=test"
+	filter := fmt.Sprintf("(CN=%s)", ldap.EscapeFilter(user))
+
+	// Filters must start and finish with ()!
+	searchReq := ldap.NewSearchRequest(baseDN, ldap.ScopeWholeSubtree, 0, 0, 0, false, filter, []string{"sAMAccountName"}, []ldap.Control{})
+
+	result, err := l.Search(searchReq)
+	if err != nil {
+		fmt.Errorf("failed to query LDAP: %w", err)
+	}
+	log.Println("Got", len(result.Entries), "search results")
 }
