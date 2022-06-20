@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	ldap "github.com/go-ldap/ldap/v3"
@@ -49,11 +48,11 @@ func (svc *Service) Query(user string) error {
 	// Filters must start and finish with ()!
 	searchReq := ldap.NewSearchRequest(baseDN, ldap.ScopeWholeSubtree, 0, 0, 0, false, filter, []string{"sAMAccountName"}, []ldap.Control{})
 
-	result, err := svc.conn.Search(searchReq)
+	_, err := svc.conn.Search(searchReq)
 	if err != nil {
 		return err
 	}
-	log.Println("Got", len(result.Entries), "search results")
+	//log.Println("Got", len(result.Entries), "search results")
 	return nil
 }
 
