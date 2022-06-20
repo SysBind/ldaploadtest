@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 	"time"
 )
@@ -20,14 +21,16 @@ type Loader struct {
 func (loader *Loader) Run() error {
 	loader.reqps = startload
 	last_increment := time.Now()
+	sleep_nano := 10000000 // nano seconds to sleep before each request
+	log.Printf("reqps=%d, sleep_nano=%d", loader.reqps, sleep_nano)
+	speedup_factor := 1.1
 	for {
 		curstart := time.Now()
 		for i := 0; i < 10; i++ {
 			for j := 1; j < loader.reqps/10; j++ {
-				//wg.Add(1)
-				time.Sleep(10 * time.Millisecond)
+				time.Sleep(time.Duration(sleep_nano) * time.Nanosecond)
+
 				go func() {
-					//		defer wg.Done()
 					usernum := rand.Intn(2000)
 					start := time.Now()
 					err := loader.svc.Query(fmt.Sprintf("demo%d", usernum))
@@ -43,10 +46,25 @@ func (loader *Loader) Run() error {
 			}
 		}
 		curelapsed := time.Since(curstart)
-		log.Printf("%d requests took %s", loader.reqps, curelapsed)
+		log.Printf("%d requests took %s (%.1f per second)",
+			loader.reqps,
+			curelapsed,
+			math.Round(float64(loader.reqps)/curelapsed.Seconds()))
 
 		incr_elapsed := time.Since(last_increment)
-		log.Printf("%s since last increment", incr_elapsed)
+
+		if curelapsed.Seconds() > 1 {
+			log.Printf("PREV speed-up factor %.1f", speedup_factor)
+			speedup_factor *= 1.1
+			log.Printf("speed-up factor %.1f", speedup_factor)
+		}
+
+		if curelapsed.Seconds() < 1 {
+			log.Printf("PREV speed-up factor %.1f", speedup_factor)
+			speedup_factor *= 0.9
+			log.Printf("speed-up factor %.1f", speedup_factor)
+		}
+		sleep_nano = int(math.Round(float64(1000000000/loader.reqps) / speedup_factor))
 
 		if incr_elapsed.Seconds() > loadperiod {
 			last_increment = time.Now()
