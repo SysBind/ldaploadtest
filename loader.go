@@ -7,9 +7,10 @@ import (
 	"time"
 )
 
-const startload = 100 // initial query per seconds
+const startload = 100 // initial concurrent queries
 const loadperiod = 5  // number of seconds to preserve current load
 const increment = 100 // the additional number of queries to add to the previous load
+const timeout = 1000  // in milliseconds, if a request exceeds this, exit the test
 
 type Loader struct {
 	svc   *Service
@@ -18,38 +19,37 @@ type Loader struct {
 
 func (loader *Loader) Run() error {
 	loader.reqps = startload
-	curperiod := 0
+	last_increment := time.Now()
 	for {
-		gstart := time.Now()
+		curstart := time.Now()
 		for i := 0; i < 10; i++ {
-			//curstart := time.Now()
-			//var wg sync.WaitGroup
 			for j := 1; j < loader.reqps/10; j++ {
 				//wg.Add(1)
+				time.Sleep(10 * time.Millisecond)
 				go func() {
 					//		defer wg.Done()
 					usernum := rand.Intn(2000)
 					start := time.Now()
 					err := loader.svc.Query(fmt.Sprintf("demo%d", usernum))
 					elapsed := time.Since(start)
-					if elapsed.Milliseconds() > int64(1000) {
-						log.Fatalf("query exeeded 1 second at %d queries per second", loader.reqps+j)
+					if elapsed.Milliseconds() > int64(timeout) {
+						log.Fatalf("query exeeded %d milliseconds at %d queries per second",
+							timeout, loader.reqps+i*10+j)
 					}
 					if err != nil {
-						log.Fatalf("query returned error at %d\n %v", j, err)
+						log.Fatalf("query returned error at %d\n %v", loader.reqps+i*10+j, err)
 					}
-					time.Sleep(10 * time.Millisecond)
 				}()
 			}
-			//wg.Wait()
-			//curelapsed := time.Since(curstart)
-			//log.Printf("elapsed %s at %d chunk %d", curelapsed, loader.reqps, i)
 		}
-		gelapsed := time.Since(gstart)
-		log.Printf("%d requests took %s", loader.reqps, gelapsed)
-		curperiod += 1
-		if curperiod == loadperiod {
-			curperiod = 0
+		curelapsed := time.Since(curstart)
+		log.Printf("%d requests took %s", loader.reqps, curelapsed)
+
+		incr_elapsed := time.Since(last_increment)
+		log.Printf("%s since last increment", incr_elapsed)
+
+		if incr_elapsed.Seconds() > loadperiod {
+			last_increment = time.Now()
 			loader.reqps += increment
 		}
 	}
